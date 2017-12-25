@@ -42,45 +42,34 @@ class GoGenerator implements CodeGenerator {
         Files.deleteIfExists(entireFileName);
         Path f = Files.createFile(entireFileName);
 
-        Map<String, List<String>> complex = listener.getComplexTypeToDefinitions();
+        Map<String, List<ComplexType>> complex = listener.getComplexTypeToDefinitions();
         Map<String, List<String>> primitive = listener.getPrimitiveTypeToDefinitions();
 
         try (BufferedWriter writer = Files.newBufferedWriter(f)) {
             writer.write(FILE_HEADER);
             writer.newLine();
 
-            for (Map.Entry<String, List<String>> e : complex.entrySet()) {
-
-                generateStruct(writer, e.getKey(), e.getValue(), primitive);
-
-                List<String> lineDef = new LinkedList<>();
-                for (String s : e.getValue()) {
-                    List<String> pTypes = primitive.get(s);
-                    if (pTypes == null) {
-                        pTypes = complex.get(s);
-                    }
-                    String primitiveType = pTypes.get(0);
-                    String goType = bnfTypeToGoType(primitiveType);
-                    if (goType == null) {
-                        // must be a complex type then
-                        goType = "*" + gofyName(primitiveType);
-                    }
-                    lineDef.add(INDENT + gofyName(s) + " " + goType + "\n");
-                }
-
-                String goCode = String.format(STRUCT_TEMPLATE, gofyName(e.getKey()), String.join("", lineDef));
-                System.err.println(goCode);
-                writer.append(goCode);
-                writer.newLine();
+            for (Map.Entry<String, List<ComplexType>> e : complex.entrySet()) {
+                generateStruct(writer, e.getKey(), e.getValue(), primitive, complex);
             }
         }
     }
 
-    private void generateStruct(BufferedWriter writer, String structName, List<String> definitions, Map<String, List<String>> primitive) throws IOException {
+    private void generateStruct(BufferedWriter writer, String structName, List<ComplexType> definitions, Map<String, List<String>> primitive, Map<String, List<ComplexType>> complex) throws IOException {
         structName = gofyName(structName);
         List<String> goDefinitions = new LinkedList<>();
-        for (String def : definitions) {
+        for (ComplexType def : definitions) {
+            String goType;
+            List<String> primitiveTypeList = primitive.get(def.name);
+            if (primitiveTypeList != null) {
+                ComplexType complexType = complex.get(def.name).get(0);
+                goType = complexType.isArray ? "*[" + gofyName(complexType.name) + "]" : "*" + gofyName(complexType.name);
+            } else {
+                String primitiveType = primitiveTypeList.get(0);
+                goType = bnfTypeToGoType(primitiveType);
+            }
 
+            goDefinitions.add(INDENT + gofyName(def.name) + " " + goType + "\n");
         }
         String goCode = String.format(STRUCT_TEMPLATE, structName, String.join("", goDefinitions));
         writer.append(goCode);
