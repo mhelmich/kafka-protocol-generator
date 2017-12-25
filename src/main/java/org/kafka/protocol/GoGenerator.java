@@ -24,6 +24,7 @@ class GoGenerator implements CodeGenerator {
             .put("NULLABLE_STRING", "string")
             .put("BYTES", "[]byte")
             .put("BOOLEAN", "boolean")
+            .put("RECORDS", "[]byte")
             .build();
 
     private final static String INDENT = "    ";
@@ -50,30 +51,44 @@ class GoGenerator implements CodeGenerator {
             writer.newLine();
 
             for (Map.Entry<String, List<ComplexType>> e : complex.entrySet()) {
-                generateStruct(writer, e.getKey(), e.getValue(), primitive, complex);
+                generateStruct(writer, e.getKey(), e.getValue(), primitive);
+                generateFunctions(writer);
             }
         }
     }
 
-    private void generateStruct(BufferedWriter writer, String structName, List<ComplexType> definitions, Map<String, List<String>> primitive, Map<String, List<ComplexType>> complex) throws IOException {
-        structName = gofyName(structName);
+    private void generateStruct(BufferedWriter writer, String structName, List<ComplexType> definitions, Map<String, List<String>> primitive) throws IOException {
+        // skip gofying names in case it's a request or response because they come gofied already
+        if (!Character.isDigit(structName.charAt(structName.length()-1))) {
+            structName = gofyName(structName);
+        }
         List<String> goDefinitions = new LinkedList<>();
         for (ComplexType def : definitions) {
             String goType;
             List<String> primitiveTypeList = primitive.get(def.name);
-            if (primitiveTypeList != null) {
-                ComplexType complexType = complex.get(def.name).get(0);
-                goType = complexType.isArray ? "*[" + gofyName(complexType.name) + "]" : "*" + gofyName(complexType.name);
+            if (primitiveTypeList == null) {
+                // this is a complex type that is defined later
+                // for all intents and purposes type and field name are called the same
+                String gofiedName = gofyName(def.name);
+                goType = def.isArray ? "*[]" + gofiedName : "*" + gofiedName;
+                goDefinitions.add(INDENT + gofiedName + " " + goType + "\n");
             } else {
+                // this is a regular primitive field
+                // in the end I hope everything resolves to this
                 String primitiveType = primitiveTypeList.get(0);
                 goType = bnfTypeToGoType(primitiveType);
+                goDefinitions.add(INDENT + gofyName(def.name) + " " + goType + "\n");
             }
-
-            goDefinitions.add(INDENT + gofyName(def.name) + " " + goType + "\n");
         }
+
+        // join the struct definitions together and feed them into the template
         String goCode = String.format(STRUCT_TEMPLATE, structName, String.join("", goDefinitions));
         writer.append(goCode);
         writer.newLine();
+    }
+
+    private void generateFunctions(BufferedWriter writer) {
+
     }
 
     private String bnfTypeToGoType(String bnfType) {

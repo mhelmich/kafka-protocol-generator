@@ -37,7 +37,22 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
 
     @Override
     public void exitLeft_side(KafkaProtocolParser.Left_sideContext ctx) {
-        leftSideName.put(ctx.getParent(), ctx.getText());
+        // this will end up being the struct name
+        String futureStructName;
+        if (ctx.getChildCount() > 1) {
+            // this has an entity name and a version number
+            // in this case we want to filter out the string "Version:" and just use the version number
+            KafkaProtocolParser.Entity_nameContext entityNameCtx = ctx.getChild(KafkaProtocolParser.Entity_nameContext.class, 0);
+            KafkaProtocolParser.VersionContext versionCtx = ctx.getChild(KafkaProtocolParser.VersionContext.class, 0);
+            KafkaProtocolParser.Version_numberContext verionNumberCtx = versionCtx.getChild(KafkaProtocolParser.Version_numberContext.class, 0);
+            futureStructName = entityNameCtx.getText() + verionNumberCtx.getText();
+        } else {
+            futureStructName = ctx.getText();
+        }
+
+        leftSideName.put(ctx.getParent(), futureStructName);
+        complexTypeToDefinitions.putIfAbsent(futureStructName, new LinkedList<>());
+        primitiveTypeToDefinitions.putIfAbsent(futureStructName, new LinkedList<>());
     }
 
     @Override
@@ -108,6 +123,7 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
         return builder.build();
     }
 
+    // interesting for exception handling
     void dump() {
         System.err.println(getFileName());
         System.err.println(getComplexTypeToDefinitions());
