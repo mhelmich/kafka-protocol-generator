@@ -88,15 +88,25 @@ public interface KafkaProtocolListener extends ParseTreeListener {
 	 */
 	void exitRight_side(KafkaProtocolParser.Right_sideContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link KafkaProtocolParser#array}.
+	 * Enter a parse tree produced by {@link KafkaProtocolParser#complex_array}.
 	 * @param ctx the parse tree
 	 */
-	void enterArray(KafkaProtocolParser.ArrayContext ctx);
+	void enterComplex_array(KafkaProtocolParser.Complex_arrayContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link KafkaProtocolParser#array}.
+	 * Exit a parse tree produced by {@link KafkaProtocolParser#complex_array}.
 	 * @param ctx the parse tree
 	 */
-	void exitArray(KafkaProtocolParser.ArrayContext ctx);
+	void exitComplex_array(KafkaProtocolParser.Complex_arrayContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link KafkaProtocolParser#primitive_array}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrimitive_array(KafkaProtocolParser.Primitive_arrayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KafkaProtocolParser#primitive_array}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrimitive_array(KafkaProtocolParser.Primitive_arrayContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link KafkaProtocolParser#primitive_type}.
 	 * @param ctx the parse tree

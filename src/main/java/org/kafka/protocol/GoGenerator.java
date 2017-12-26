@@ -24,7 +24,7 @@ class GoGenerator implements CodeGenerator {
             .put("STRING", "string")
             .put("NULLABLE_STRING", "string")
             .put("BYTES", "[]byte")
-            .put("BOOLEAN", "boolean")
+            .put("BOOLEAN", "bool")
             .put("RECORDS", "[]byte")
             .build();
 
@@ -60,14 +60,14 @@ class GoGenerator implements CodeGenerator {
         Files.deleteIfExists(entireFileName);
         Path f = Files.createFile(entireFileName);
 
-        Map<String, List<ComplexType>> complex = listener.getComplexTypeToDefinitions();
-        Map<String, List<String>> primitive = listener.getPrimitiveTypeToDefinitions();
+        Map<String, List<TypeDefinition>> complex = listener.getComplexTypeToDefinitions();
+        Map<String, List<TypeDefinition>> primitive = listener.getPrimitiveTypeToDefinitions();
 
         try (BufferedWriter writer = Files.newBufferedWriter(f)) {
             writer.write(FILE_HEADER);
             writer.newLine();
 
-            for (Map.Entry<String, List<ComplexType>> e : complex.entrySet()) {
+            for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
                 List<MemberVar> memberVars = massageData(e.getValue(), primitive);
                 // skip gofying names in case it's a request or response because they come gofied already
                 String structName = goifyStructName(e.getKey());
@@ -83,14 +83,14 @@ class GoGenerator implements CodeGenerator {
         return endsWithDigit(structName) ? structName : gofyName(structName);
     }
 
-    private List<MemberVar> massageData(List<ComplexType> definitions, Map<String, List<String>> primitive) {
+    private List<MemberVar> massageData(List<TypeDefinition> definitions, Map<String, List<TypeDefinition>> primitive) {
         List<MemberVar> memberVars = new LinkedList<>();
-        for (ComplexType def : definitions) {
+        for (TypeDefinition def : definitions) {
             final String gofiedName = gofyName(def.name);
             final boolean isComplex;
             final boolean isArray;
             final String goType;
-            List<String> primitiveTypeList = primitive.get(def.name);
+            List<TypeDefinition> primitiveTypeList = primitive.get(def.name);
             if (primitiveTypeList == null) {
                 // this is a complex type that is defined later
                 // for all intents and purposes type and field name are called the same
@@ -100,8 +100,8 @@ class GoGenerator implements CodeGenerator {
             } else {
                 // this is a regular primitive field
                 // in the end I hope everything resolves to this
-                String primitiveType = primitiveTypeList.get(0);
-                goType = bnfTypeToGoType(primitiveType);
+                TypeDefinition primitiveType = primitiveTypeList.get(0);
+                goType = bnfTypeToGoType(primitiveType.name);
                 isComplex = false;
                 isArray = def.isArray;
             }
@@ -126,7 +126,8 @@ class GoGenerator implements CodeGenerator {
             } else {
                 // this is a regular primitive field
                 // in the end I hope everything resolves to this
-                goDefinitions.add(INDENT + member.name + " " + member.type + "\n");
+                String goType = member.isArray ? "[]" + member.type : member.type;
+                goDefinitions.add(INDENT + member.name + " " + goType + "\n");
             }
         }
 

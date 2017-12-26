@@ -18,8 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Main {
-    private final static Pattern regexp = Pattern.compile("<pre>(.|\\n)*?<\\/pre>", Pattern.MULTILINE);
-    private final static Path testFolder = Paths.get("/Users/marco.helmich/go/src/go-kafka-protocol");
+    private final static Pattern regexp = Pattern.compile("<pre>(.|\\n)*?<\\/pre>");
+    private final static Path testFolder = Paths.get("/Users/marco.helmich/go/src/kafkaprotocol");
     private final static CodeGenerator codeGen = new GoGenerator();
 
     public static void main(String[] args) throws IOException {

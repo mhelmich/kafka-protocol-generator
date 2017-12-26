@@ -112,13 +112,25 @@ public class KafkaProtocolBaseListener implements KafkaProtocolListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArray(KafkaProtocolParser.ArrayContext ctx) { }
+	@Override public void enterComplex_array(KafkaProtocolParser.Complex_arrayContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArray(KafkaProtocolParser.ArrayContext ctx) { }
+	@Override public void exitComplex_array(KafkaProtocolParser.Complex_arrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPrimitive_array(KafkaProtocolParser.Primitive_arrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPrimitive_array(KafkaProtocolParser.Primitive_arrayContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

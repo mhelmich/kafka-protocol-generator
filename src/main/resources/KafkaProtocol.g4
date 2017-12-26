@@ -14,9 +14,11 @@ version: OPEN_PARANTHESIS VERSION version_number CLOSING_PARANTHESIS;
 
 version_number: DIGIT;
 
-right_side: ( complex_type | primitive_type | array )+;
+right_side: ( complex_type | primitive_type | complex_array | primitive_array )+;
 
-array: OPEN_BRACKET ( complex_type | primitive_type ) CLOSING_BRACKET;
+complex_array: OPEN_BRACKET ( complex_type | primitive_type ) CLOSING_BRACKET;
+
+primitive_array: ARRAY OPEN_PARANTHESIS primitive_type CLOSING_PARANTHESIS;
 
 primitive_type: PRIMITIVE_TYPE;
 
@@ -56,6 +58,10 @@ PRE_END
 
 NEW_LINE
    : '\n'
+   ;
+
+ARRAY
+   : 'ARRAY'
    ;
 
 OPEN_PARANTHESIS

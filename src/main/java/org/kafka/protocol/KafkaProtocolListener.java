@@ -16,8 +16,8 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
     private String versionNumber;
 
     private final ParseTreeProperty<String> leftSideName = new ParseTreeProperty<>();
-    private final Map<String, List<ComplexType>> complexTypeToDefinitions = new HashMap<>();
-    private final Map<String, List<String>> primitiveTypeToDefinitions = new HashMap<>();
+    private final Map<String, List<TypeDefinition>> complexTypeToDefinitions = new HashMap<>();
+    private final Map<String, List<TypeDefinition>> primitiveTypeToDefinitions = new HashMap<>();
 
     @Override
     public void exitEntity_name(KafkaProtocolParser.Entity_nameContext ctx) {
@@ -60,11 +60,11 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
         if (isRightSide(ctx)) {
             String name = getLeftSideName(ctx);
             if (name != null) {
-                List<ComplexType> types = complexTypeToDefinitions.get(name);
+                List<TypeDefinition> types = complexTypeToDefinitions.get(name);
                 if (types != null) {
                     String text = ctx.getText();
                     boolean isArray = isArray(ctx);
-                    types.add(new ComplexType(text, isArray));
+                    types.add(new TypeDefinition(text, isArray, true));
                 }
             }
         }
@@ -75,9 +75,11 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
         if (isRightSide(ctx)) {
             String name = getLeftSideName(ctx);
             if (name != null) {
-                List<String> names = primitiveTypeToDefinitions.get(name);
+                List<TypeDefinition> names = primitiveTypeToDefinitions.get(name);
                 if (names != null) {
-                    names.add(ctx.getText());
+                    String text = ctx.getText();
+                    boolean isArray = isArray(ctx);
+                    names.add(new TypeDefinition(text, isArray, false));
                 }
             }
         }
@@ -92,7 +94,7 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
     }
 
     private boolean isArray(ParserRuleContext ctx) {
-        return KafkaProtocolParser.ArrayContext.class.equals(ctx.getParent().getClass());
+        return KafkaProtocolParser.Complex_arrayContext.class.equals(ctx.getParent().getClass()) || KafkaProtocolParser.Primitive_arrayContext.class.equals(ctx.getParent().getClass());
     }
 
     private KafkaProtocolParser.Bnf_lineContext getBnfLineCtx(ParserRuleContext srcCtx) {
@@ -107,16 +109,16 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
         return (versionNumber == null) ? entityName : entityName + "_" + versionNumber;
     }
 
-    Map<String, List<ComplexType>> getComplexTypeToDefinitions() {
-        ImmutableMap.Builder<String, List<ComplexType>> builder = ImmutableMap.builderWithExpectedSize(complexTypeToDefinitions.size());
+    Map<String, List<TypeDefinition>> getComplexTypeToDefinitions() {
+        ImmutableMap.Builder<String, List<TypeDefinition>> builder = ImmutableMap.builderWithExpectedSize(complexTypeToDefinitions.size());
         complexTypeToDefinitions.entrySet().stream()
                 .filter(e -> e.getValue().size() > 0)
                 .forEach(e -> builder.put(e.getKey(), e.getValue()));
         return builder.build();
     }
 
-    Map<String, List<String>> getPrimitiveTypeToDefinitions() {
-        ImmutableMap.Builder<String, List<String>> builder = ImmutableMap.builderWithExpectedSize(primitiveTypeToDefinitions.size());
+    Map<String, List<TypeDefinition>> getPrimitiveTypeToDefinitions() {
+        ImmutableMap.Builder<String, List<TypeDefinition>> builder = ImmutableMap.builderWithExpectedSize(primitiveTypeToDefinitions.size());
         primitiveTypeToDefinitions.entrySet().stream()
                 .filter(e -> e.getValue().size() > 0)
                 .forEach(e -> builder.put(e.getKey(), e.getValue()));
