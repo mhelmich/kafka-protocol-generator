@@ -15,7 +15,8 @@ import java.util.Map;
 
 class GoGenerator implements CodeGenerator {
 
-    private final static Map<String, String> bnfTypeToGoType = ImmutableMap.<String, String>builder()
+    private final static Map<String, String> bnfTypeToGoType = ImmutableMap
+            .<String, String>builder()
             .put("INT64", "int64")
             .put("INT32", "int32")
             .put("INT16", "int16")
@@ -29,12 +30,28 @@ class GoGenerator implements CodeGenerator {
 
     private final static String INDENT = "    ";
     private final static String FILE_HEADER = "" +
-            "package kafka-protocol\n" +
+            "package kafka_protocol\n" +
             "import ()\n";
 
     private final static String STRUCT_TEMPLATE = "" +
             "type %s struct {\n" +
             "%s" +
+            "}\n";
+
+    private final static String DECODE_TEMPLATE = "" +
+            "func (dec *Decodable) decode() err {\n" +
+            "%s\n" +
+            "}\n";
+
+    private final static String PRIMITIVE_ASSIGNMENT_TEMPLATE = "" +
+            "%s := dec.%s()\n";
+
+    private final static String COMPLEX_ASSIGNMENT_TEMPLATE = "" +
+            "";
+
+    private final static String ENCODE_TEMPLATE = "" +
+            "func (enc *Encodable) encode() err {\n" +
+            "%s\n" +
             "}\n";
 
     @Override
@@ -51,33 +68,65 @@ class GoGenerator implements CodeGenerator {
             writer.newLine();
 
             for (Map.Entry<String, List<ComplexType>> e : complex.entrySet()) {
-                generateStruct(writer, e.getKey(), e.getValue(), primitive);
-                generateFunctions(writer);
+                List<MemberVar> memberVars = massageData(e.getValue(), primitive);
+                // skip gofying names in case it's a request or response because they come gofied already
+                String structName = goifyStructName(e.getKey());
+                generateStruct(writer, structName, memberVars);
+                generateEncodeFunction(writer, structName, memberVars);
+                generateDecodeFunction(writer, structName, memberVars);
             }
         }
     }
 
-    private void generateStruct(BufferedWriter writer, String structName, List<ComplexType> definitions, Map<String, List<String>> primitive) throws IOException {
+    private String goifyStructName(String structName) {
         // skip gofying names in case it's a request or response because they come gofied already
-        if (!Character.isDigit(structName.charAt(structName.length()-1))) {
-            structName = gofyName(structName);
-        }
-        List<String> goDefinitions = new LinkedList<>();
+        return endsWithDigit(structName) ? structName : gofyName(structName);
+    }
+
+    private List<MemberVar> massageData(List<ComplexType> definitions, Map<String, List<String>> primitive) {
+        List<MemberVar> memberVars = new LinkedList<>();
         for (ComplexType def : definitions) {
-            String goType;
+            final String gofiedName = gofyName(def.name);
+            final boolean isComplex;
+            final boolean isArray;
+            final String goType;
             List<String> primitiveTypeList = primitive.get(def.name);
             if (primitiveTypeList == null) {
                 // this is a complex type that is defined later
                 // for all intents and purposes type and field name are called the same
-                String gofiedName = gofyName(def.name);
-                goType = def.isArray ? "*[]" + gofiedName : "*" + gofiedName;
-                goDefinitions.add(INDENT + gofiedName + " " + goType + "\n");
+                goType = def.isArray ? "[]*" + gofiedName : "*" + gofiedName;
+                isComplex = true;
+                isArray = def.isArray;
             } else {
                 // this is a regular primitive field
                 // in the end I hope everything resolves to this
                 String primitiveType = primitiveTypeList.get(0);
                 goType = bnfTypeToGoType(primitiveType);
-                goDefinitions.add(INDENT + gofyName(def.name) + " " + goType + "\n");
+                isComplex = false;
+                isArray = def.isArray;
+            }
+            memberVars.add(new MemberVar(gofiedName, isComplex, isArray, goType));
+        }
+        return memberVars;
+    }
+
+    private void generateStruct(
+            BufferedWriter writer,
+            String structName,
+            List<MemberVar> memberVars
+    ) throws IOException {
+        List<String> goDefinitions = new LinkedList<>();
+
+        for (MemberVar member : memberVars) {
+            if (member.isComplex) {
+                // this is a complex type that is defined later
+                // for all intents and purposes type and field name are called the same
+                String goType = member.isArray ? "[]*" + member.name : "*" + member.name;
+                goDefinitions.add(INDENT + member.name + " " + goType + "\n");
+            } else {
+                // this is a regular primitive field
+                // in the end I hope everything resolves to this
+                goDefinitions.add(INDENT + member.name + " " + member.type + "\n");
             }
         }
 
@@ -87,8 +136,23 @@ class GoGenerator implements CodeGenerator {
         writer.newLine();
     }
 
-    private void generateFunctions(BufferedWriter writer) {
+    private void generateEncodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
 
+    }
+
+    private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
+        List<String> assignments = new LinkedList<>();
+        String goCode = String.format(DECODE_TEMPLATE, String.join("\n", assignments));
+        writer.append(goCode);
+        writer.newLine();
+    }
+
+    private String primitiveAssignment(String varName, String methodName) {
+        return String.format(PRIMITIVE_ASSIGNMENT_TEMPLATE, varName, methodName);
+    }
+
+    private boolean endsWithDigit(String s) {
+        return Character.isDigit(s.charAt(s.length() - 1));
     }
 
     private String bnfTypeToGoType(String bnfType) {
@@ -102,5 +166,24 @@ class GoGenerator implements CodeGenerator {
 
     private String gofyName(String name) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
+    }
+
+    private static class MemberVar {
+        final String name;
+        final boolean isComplex;
+        final boolean isArray;
+        final String type;
+
+        MemberVar(String name, boolean isComplex, boolean isArray, String type) {
+            this.name = name;
+            this.isComplex = isComplex;
+            this.isArray = isArray;
+            this.type = type;
+        }
+
+        @Override
+        public String toString() {
+            return name + " - " + isComplex + " - " + type;
+        }
     }
 }

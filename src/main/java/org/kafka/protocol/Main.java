@@ -1,6 +1,5 @@
 package org.kafka.protocol;
 
-import com.google.common.base.CaseFormat;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -10,7 +9,6 @@ import org.kafka.protocol.gen.KafkaProtocolLexer;
 import org.kafka.protocol.gen.KafkaProtocolParser;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +19,7 @@ import java.util.regex.Pattern;
 
 public class Main {
     private final static Pattern regexp = Pattern.compile("<pre>(.|\\n)*?<\\/pre>", Pattern.MULTILINE);
-    private final static Path testFolder = Paths.get("/Users/marco.helmich/Desktop/testing");
+    private final static Path testFolder = Paths.get("/Users/marco.helmich/go/src/go-kafka-protocol");
     private final static CodeGenerator codeGen = new GoGenerator();
 
     public static void main(String[] args) throws IOException {
