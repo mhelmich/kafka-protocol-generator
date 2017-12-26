@@ -38,9 +38,9 @@ func (enc *Encoder) WriteInt64(i int64) {
 
 func (enc *Encoder) WriteString(s string) {
     if s == "" {
-        enc.WriteInt32(-1)
+        enc.WriteInt16(-1)
     } else {
-        enc.WriteInt32(int32(len(s)))
+        enc.WriteInt16(int16(len(s)))
         binary.Write(enc.buffer, binary.BigEndian, s)
     }
 }
