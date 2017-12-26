@@ -79,6 +79,16 @@ class GoGenerator implements CodeGenerator {
     private final static String PRIMITIVE_ENCODING_TEMPLATE = INDENT +
             "enc.%s(that.%s)";
 
+    private final static String COMPLEX_ARRAY_ENCODING_TEMPLATE = "" +
+            INDENT + "{\n" +
+            INDENT + INDENT + "l := len(that.%s)\n" +
+            INDENT + INDENT + "enc.WriteInt32(int32(l))\n" +
+            INDENT + INDENT + "for i := 0; i < l; i++ {\n" +
+            INDENT + INDENT + INDENT + "that.%s[i].encode(enc)\n" +
+            INDENT + INDENT + "}\n" +
+            INDENT + "}\n" +
+            "";
+
     @Override
     public void generateGoSourceFile(KafkaProtocolListener listener, Path testFolder) throws IOException {
         seedBaseFilesIntoDirectory(testFolder);
@@ -186,6 +196,8 @@ class GoGenerator implements CodeGenerator {
         for (MemberVar member : memberVars) {
             if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string"))) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type), member.name));
+            } else if(member.isArray && member.isComplex) {
+                assignments.add(String.format(COMPLEX_ARRAY_ENCODING_TEMPLATE, member.name, member.name));
             } else {
                 System.err.println("Can't encode type: " + member.type + " array " + member.isArray);
             }
