@@ -41,7 +41,7 @@ class GoGenerator implements CodeGenerator {
             "}\n";
 
     private final static String DECODE_TEMPLATE = "" +
-            "func (dec *%s) decode() error {\n" +
+            "func (that *%s) decode(dec Decoder) error {\n" +
             "%s\n" +
             "}\n";
 
@@ -52,7 +52,7 @@ class GoGenerator implements CodeGenerator {
             "";
 
     private final static String ENCODE_TEMPLATE = "" +
-            "func (enc *%s) encode() error {\n" +
+            "func (that *%s) encode(enc Encoder) error {\n" +
             "%s\n" +
             "}\n";
 
@@ -165,6 +165,7 @@ class GoGenerator implements CodeGenerator {
 
     private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
         List<String> assignments = new LinkedList<>();
+
         assignments.add(INDENT + "return nil");
         String goCode = String.format(DECODE_TEMPLATE, structName, String.join("\n", assignments));
         writer.append(goCode);
