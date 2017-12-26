@@ -20,12 +20,29 @@ func NewEncoder() *Encoder {
     }
 }
 
+func (enc *Encoder) WriteInt8(i int8) {
+    binary.Write(enc.buffer, binary.BigEndian, i)
+}
+
 func (enc *Encoder) WriteInt16(i int16) {
     binary.Write(enc.buffer, binary.BigEndian, i)
 }
 
 func (enc *Encoder) WriteInt32(i int32) {
     binary.Write(enc.buffer, binary.BigEndian, i)
+}
+
+func (enc *Encoder) WriteInt64(i int64) {
+    binary.Write(enc.buffer, binary.BigEndian, i)
+}
+
+func (enc *Encoder) WriteString(s string) {
+    if s == "" {
+        enc.WriteInt32(-1)
+    } else {
+        enc.WriteInt32(int32(len(s)))
+        binary.Write(enc.buffer, binary.BigEndian, s)
+    }
 }
 
 func (enc *Encoder) Len() int {

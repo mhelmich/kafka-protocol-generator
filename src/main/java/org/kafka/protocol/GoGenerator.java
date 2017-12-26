@@ -76,6 +76,9 @@ class GoGenerator implements CodeGenerator {
             "%s\n" +
             "}\n";
 
+    private final static String PRIMITIVE_ENCODING_TEMPLATE = INDENT +
+            "enc.%s(that.%s)";
+
     @Override
     public void generateGoSourceFile(KafkaProtocolListener listener, Path testFolder) throws IOException {
         seedBaseFilesIntoDirectory(testFolder);
@@ -114,7 +117,9 @@ class GoGenerator implements CodeGenerator {
 
     private String goifyStructName(String structName, String rootStructName) {
         // skip gofying names in case it's a request or response because they come gofied already
-        return endsWithDigit(structName) ? structName : namespaceStructName(gofyName(structName), rootStructName);
+        return endsWithDigit(structName) || structName.equals("RequestHeader") || structName.equals("ResponseHeader")
+                ? structName
+                : namespaceStructName(gofyName(structName), rootStructName);
     }
 
     private String namespaceStructName(String structName, String rootStructName) {
@@ -178,6 +183,13 @@ class GoGenerator implements CodeGenerator {
 
     private void generateEncodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
         List<String> assignments = new LinkedList<>();
+        for (MemberVar member : memberVars) {
+            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string"))) {
+                assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type), member.name));
+            } else {
+                System.err.println("Can't encode type: " + member.type + " array " + member.isArray);
+            }
+        }
         assignments.add(INDENT + "return nil");
         String goCode = String.format(ENCODE_TEMPLATE, structName, String.join("\n", assignments));
         writer.append(goCode);
