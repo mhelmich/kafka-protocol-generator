@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 class GoGenerator implements CodeGenerator {
 
@@ -39,7 +41,7 @@ class GoGenerator implements CodeGenerator {
             "}\n";
 
     private final static String DECODE_TEMPLATE = "" +
-            "func (dec *Decodable) decode() err {\n" +
+            "func (dec *%s) decode() error {\n" +
             "%s\n" +
             "}\n";
 
@@ -50,7 +52,7 @@ class GoGenerator implements CodeGenerator {
             "";
 
     private final static String ENCODE_TEMPLATE = "" +
-            "func (enc *Encodable) encode() err {\n" +
+            "func (enc *%s) encode() error {\n" +
             "%s\n" +
             "}\n";
 
@@ -67,23 +69,38 @@ class GoGenerator implements CodeGenerator {
             writer.write(FILE_HEADER);
             writer.newLine();
 
+            String rootStructName;
+            if (listener.getVersionNumber() != null && !complex.isEmpty()) {
+                rootStructName = findRootStructName(complex.keySet());
+            } else {
+                rootStructName = "";
+            }
+
             for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
-                List<MemberVar> memberVars = massageData(e.getValue(), primitive);
+                List<MemberVar> memberVars = massageData(e.getValue(), primitive, rootStructName);
                 // skip gofying names in case it's a request or response because they come gofied already
-                String structName = goifyStructName(e.getKey()) + listener.getVersionNumber();
-                generateStruct(writer, structName, memberVars);
+                String structName = goifyStructName(e.getKey(), rootStructName);
+                generateStruct(writer, structName, memberVars, rootStructName);
                 generateEncodeFunction(writer, structName, memberVars);
                 generateDecodeFunction(writer, structName, memberVars);
             }
         }
     }
 
-    private String goifyStructName(String structName) {
-        // skip gofying names in case it's a request or response because they come gofied already
-        return endsWithDigit(structName) ? structName : gofyName(structName);
+    private String findRootStructName(Set<String> complexNames) {
+        return complexNames.stream().filter(this::endsWithDigit).collect(Collectors.toList()).get(0);
     }
 
-    private List<MemberVar> massageData(List<TypeDefinition> definitions, Map<String, List<TypeDefinition>> primitive) {
+    private String goifyStructName(String structName, String rootStructName) {
+        // skip gofying names in case it's a request or response because they come gofied already
+        return endsWithDigit(structName) ? structName : namespaceStructName(gofyName(structName), rootStructName);
+    }
+
+    private String namespaceStructName(String structName, String rootStructName) {
+        return rootStructName + "_" + structName;
+    }
+
+    private List<MemberVar> massageData(List<TypeDefinition> definitions, Map<String, List<TypeDefinition>> primitive, String rootStructName) {
         List<MemberVar> memberVars = new LinkedList<>();
         for (TypeDefinition def : definitions) {
             final String gofiedName = gofyName(def.name);
@@ -113,7 +130,8 @@ class GoGenerator implements CodeGenerator {
     private void generateStruct(
             BufferedWriter writer,
             String structName,
-            List<MemberVar> memberVars
+            List<MemberVar> memberVars,
+            String rootStructName
     ) throws IOException {
         List<String> goDefinitions = new LinkedList<>();
 
@@ -121,7 +139,7 @@ class GoGenerator implements CodeGenerator {
             if (member.isComplex) {
                 // this is a complex type that is defined later
                 // for all intents and purposes type and field name are called the same
-                String goType = member.isArray ? "[]*" + member.name : "*" + member.name;
+                String goType = member.isArray ? "[]*" + namespaceStructName(member.name, rootStructName) : "*" + namespaceStructName(member.name, rootStructName);
                 goDefinitions.add(INDENT + member.name + " " + goType + "\n");
             } else {
                 // this is a regular primitive field
@@ -138,12 +156,17 @@ class GoGenerator implements CodeGenerator {
     }
 
     private void generateEncodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
-
+        List<String> assignments = new LinkedList<>();
+        assignments.add(INDENT + "return nil");
+        String goCode = String.format(ENCODE_TEMPLATE, structName, String.join("\n", assignments));
+        writer.append(goCode);
+        writer.newLine();
     }
 
     private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
         List<String> assignments = new LinkedList<>();
-        String goCode = String.format(DECODE_TEMPLATE, String.join("\n", assignments));
+        assignments.add(INDENT + "return nil");
+        String goCode = String.format(DECODE_TEMPLATE, structName, String.join("\n", assignments));
         writer.append(goCode);
         writer.newLine();
     }
