@@ -70,7 +70,7 @@ class GoGenerator implements CodeGenerator {
             for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
                 List<MemberVar> memberVars = massageData(e.getValue(), primitive);
                 // skip gofying names in case it's a request or response because they come gofied already
-                String structName = goifyStructName(e.getKey());
+                String structName = goifyStructName(e.getKey()) + listener.getVersionNumber();
                 generateStruct(writer, structName, memberVars);
                 generateEncodeFunction(writer, structName, memberVars);
                 generateDecodeFunction(writer, structName, memberVars);

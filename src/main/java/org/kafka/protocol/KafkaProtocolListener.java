@@ -109,6 +109,10 @@ class KafkaProtocolListener extends KafkaProtocolBaseListener {
         return (versionNumber == null) ? entityName : entityName + "_" + versionNumber;
     }
 
+    String getVersionNumber() {
+        return versionNumber;
+    }
+
     Map<String, List<TypeDefinition>> getComplexTypeToDefinitions() {
         ImmutableMap.Builder<String, List<TypeDefinition>> builder = ImmutableMap.builderWithExpectedSize(complexTypeToDefinitions.size());
         complexTypeToDefinitions.entrySet().stream()
