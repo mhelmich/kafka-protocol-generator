@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +28,7 @@ class GoGenerator implements CodeGenerator {
             .put("NULLABLE_STRING", "string")
             .put("BYTES", "[]byte")
             .put("BOOLEAN", "bool")
-            .put("RECORDS", "[]byte")
+            .put("RECORDS", "Records") // yes, this is a pre-existing go class
             .build();
 
     private final static String INDENT = "    ";
@@ -45,11 +46,30 @@ class GoGenerator implements CodeGenerator {
             "%s\n" +
             "}\n";
 
-    private final static String PRIMITIVE_ASSIGNMENT_TEMPLATE = "" +
-            "%s := dec.%s()\n";
+    private final static String PRIMITIVE_DECODING_TEMPLATE = INDENT +
+            "that.%s = dec.%s()\n";
 
-    private final static String COMPLEX_ASSIGNMENT_TEMPLATE = "" +
-            "";
+    private final static String COMPLEX_DECODING_TEMPLATE = INDENT +
+            "that.%s = new(%s)\n" +
+            INDENT +
+            "that.%s.decode(dec)\n";
+
+    private final static String COMPLEX_ARRAY_DECODING_TEMPLATE = "" +
+            INDENT + "{\n" +
+            INDENT + INDENT + "arrayLength := dec.ReadInt32()\n" +
+            INDENT + INDENT + "if int(arrayLength) == -1 {\n" +
+            INDENT + INDENT + INDENT + "that.%s = nil\n" +
+            INDENT + INDENT + "} else {\n" +
+            INDENT + INDENT + INDENT + "buf := make([]%s, arrayLength)\n" +
+            INDENT + INDENT + INDENT + "var i int32\n" +
+            INDENT + INDENT + INDENT + "for i = 0; i < arrayLength; i++ {\n" +
+            INDENT + INDENT + INDENT + INDENT + "item := new(%s)\n" +
+            INDENT + INDENT + INDENT + INDENT + "item.decode(dec)\n" +
+            INDENT + INDENT + INDENT + INDENT + "buf[i] = item\n" +
+            INDENT + INDENT + INDENT + "}\n" +
+            INDENT + INDENT + INDENT + "that.%s = buf\n" +
+            INDENT + INDENT + "}\n" +
+            INDENT + "}\n";
 
     private final static String ENCODE_TEMPLATE = "" +
             "func (that *%s) encode(enc Encoder) error {\n" +
@@ -58,6 +78,7 @@ class GoGenerator implements CodeGenerator {
 
     @Override
     public void generateGoSourceFile(KafkaProtocolListener listener, Path testFolder) throws IOException {
+        seedBaseFilesIntoDirectory(testFolder);
         Path entireFileName = getPath(listener, testFolder);
         Files.deleteIfExists(entireFileName);
         Path f = Files.createFile(entireFileName);
@@ -77,12 +98,12 @@ class GoGenerator implements CodeGenerator {
             }
 
             for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
-                List<MemberVar> memberVars = massageData(e.getValue(), primitive, rootStructName);
+                List<MemberVar> memberVars = massageData(e.getValue(), primitive);
                 // skip gofying names in case it's a request or response because they come gofied already
                 String structName = goifyStructName(e.getKey(), rootStructName);
                 generateStruct(writer, structName, memberVars, rootStructName);
                 generateEncodeFunction(writer, structName, memberVars);
-                generateDecodeFunction(writer, structName, memberVars);
+                generateDecodeFunction(writer, structName, memberVars, rootStructName);
             }
         }
     }
@@ -100,7 +121,7 @@ class GoGenerator implements CodeGenerator {
         return rootStructName + "_" + structName;
     }
 
-    private List<MemberVar> massageData(List<TypeDefinition> definitions, Map<String, List<TypeDefinition>> primitive, String rootStructName) {
+    private List<MemberVar> massageData(List<TypeDefinition> definitions, Map<String, List<TypeDefinition>> primitive) {
         List<MemberVar> memberVars = new LinkedList<>();
         for (TypeDefinition def : definitions) {
             final String gofiedName = gofyName(def.name);
@@ -163,17 +184,36 @@ class GoGenerator implements CodeGenerator {
         writer.newLine();
     }
 
-    private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
+    private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars, String rootStructName) throws IOException {
         List<String> assignments = new LinkedList<>();
+        for (MemberVar member : memberVars) {
+            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string"))) {
+                assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "Read" + gofyName(member.type)));
+            } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string"))) {
+                assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "Read" + gofyName(member.type) + "Array"));
+            } else if(member.isComplex && !member.isArray) {
+                String type = member.type.substring(1, member.type.length());
+                type = rootStructName + "_" + type;
+                assignments.add(String.format(COMPLEX_DECODING_TEMPLATE, member.name, type, member.name));
+            } else if (member.isComplex && member.isArray) {
+                String type = member.type.substring(3, member.type.length());
+                type = rootStructName + "_" + type;
+                assignments.add(String.format(COMPLEX_ARRAY_DECODING_TEMPLATE, member.name, "*" + type, type, member.name));
+            } else if(member.type.equals("[]byte")) {
+                assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "ReadBytes"));
+            } else {
+                System.err.println("Can't decode type: " + member.type + " array " + member.isArray);
+            }
+        }
 
         assignments.add(INDENT + "return nil");
-        String goCode = String.format(DECODE_TEMPLATE, structName, String.join("\n", assignments));
+        String goCode = String.format(DECODE_TEMPLATE, structName, String.join("", assignments));
         writer.append(goCode);
         writer.newLine();
     }
 
     private String primitiveAssignment(String varName, String methodName) {
-        return String.format(PRIMITIVE_ASSIGNMENT_TEMPLATE, varName, methodName);
+        return String.format(PRIMITIVE_DECODING_TEMPLATE, varName, methodName);
     }
 
     private boolean endsWithDigit(String s) {
@@ -191,6 +231,41 @@ class GoGenerator implements CodeGenerator {
 
     private String gofyName(String name) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
+    }
+
+    private void seedBaseFilesIntoDirectory(Path testFolder) {
+        String decoder = "/decoder.go";
+        Path filePath = Paths.get(testFolder.toAbsolutePath().toString(), decoder);
+        if (!Files.exists(filePath)) {
+            try (InputStream in = this.getClass().getResourceAsStream(decoder)) {
+                Files.deleteIfExists(filePath);
+                Files.copy(in, filePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        String encoder = "/encoder.go";
+        filePath = Paths.get(testFolder.toAbsolutePath().toString(), encoder);
+        if (!Files.exists(filePath)) {
+            try (InputStream in = this.getClass().getResourceAsStream(encoder)) {
+                Files.deleteIfExists(filePath);
+                Files.copy(in, filePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        String records = "/records.go";
+        filePath = Paths.get(testFolder.toAbsolutePath().toString(), records);
+        if (!Files.exists(filePath)) {
+            try (InputStream in = this.getClass().getResourceAsStream(records)) {
+                Files.deleteIfExists(filePath);
+                Files.copy(in, filePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static class MemberVar {
