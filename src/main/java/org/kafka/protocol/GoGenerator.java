@@ -46,13 +46,12 @@ class GoGenerator implements CodeGenerator {
             "%s\n" +
             "}\n";
 
-    private final static String PRIMITIVE_DECODING_TEMPLATE = INDENT +
-            "that.%s = dec.%s()\n";
+    private final static String PRIMITIVE_DECODING_TEMPLATE =
+            INDENT + "that.%s = dec.%s()\n";
 
-    private final static String COMPLEX_DECODING_TEMPLATE = INDENT +
-            "that.%s = new(%s)\n" +
-            INDENT +
-            "that.%s.decode(dec)\n";
+    private final static String COMPLEX_DECODING_TEMPLATE =
+            INDENT + "that.%s = new(%s)\n" +
+            INDENT + "that.%s.decode(dec)\n";
 
     private final static String COMPLEX_ARRAY_DECODING_TEMPLATE = "" +
             INDENT + "{\n" +
@@ -78,6 +77,9 @@ class GoGenerator implements CodeGenerator {
 
     private final static String PRIMITIVE_ENCODING_TEMPLATE = INDENT +
             "enc.%s(that.%s)";
+
+    private final static String COMPLEX_ENCODING_TEMPLATE =
+            INDENT + "that.%s.encode(enc)\n";
 
     private final static String COMPLEX_ARRAY_ENCODING_TEMPLATE = "" +
             INDENT + "{\n" +
@@ -200,6 +202,8 @@ class GoGenerator implements CodeGenerator {
                 assignments.add(String.format(COMPLEX_ARRAY_ENCODING_TEMPLATE, member.name, member.name));
             } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string"))) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type) + "Array", member.name));
+            } else if(member.isComplex && !member.isArray) {
+                assignments.add(String.format(COMPLEX_ENCODING_TEMPLATE, member.name));
             } else {
                 System.err.println("Can't encode type: " + member.type + " array " + member.isArray);
             }
