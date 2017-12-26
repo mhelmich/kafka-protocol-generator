@@ -4,7 +4,7 @@ bnf_element: PRE_START bnf_lines PRE_END;
 
 bnf_lines: (bnf_line)+;
 
-bnf_line: INDENT* left_side ARROW right_side;
+bnf_line: INDENT* left_side ARROW ( right_side )?;
 
 left_side: ( entity_name | complex_type ) ( version )? ;
 
@@ -16,7 +16,7 @@ version_number: DIGIT;
 
 right_side: ( complex_type | primitive_type | complex_array | primitive_array )+;
 
-complex_array: OPEN_BRACKET ( complex_type | primitive_type ) CLOSING_BRACKET;
+complex_array: OPEN_BRACKET complex_type CLOSING_BRACKET;
 
 primitive_array: ARRAY OPEN_PARANTHESIS primitive_type CLOSING_PARANTHESIS;
 
