@@ -45,6 +45,22 @@ func (enc *Encoder) WriteString(s string) {
     }
 }
 
+func (enc *Encoder) WriteInt32Array(a []int32) {
+    arrayLength := len(a)
+    enc.WriteInt32(int32(arrayLength))
+    for i := 0; i < arrayLength; i++ {
+        enc.WriteInt32(a[i])
+    }
+}
+
+func (enc *Encoder) WriteStringArray(strings []string) {
+    arrayLength := len(strings)
+    enc.WriteInt32(int32(arrayLength))
+    for i := 0; i < arrayLength; i++ {
+        enc.WriteString(strings[i])
+    }
+}
+
 func (enc *Encoder) Len() int {
     return enc.buffer.Len()
 }
