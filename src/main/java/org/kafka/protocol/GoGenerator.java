@@ -202,6 +202,8 @@ class GoGenerator implements CodeGenerator {
                 assignments.add(String.format(COMPLEX_ARRAY_ENCODING_TEMPLATE, member.name, member.name));
             } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string"))) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type) + "Array", member.name));
+            } else if (!member.isArray && member.type.equals("[]byte")) {
+                assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "WriteByteArray", member.name));
             } else if(member.isComplex && !member.isArray) {
                 assignments.add(String.format(COMPLEX_ENCODING_TEMPLATE, member.name));
             } else {

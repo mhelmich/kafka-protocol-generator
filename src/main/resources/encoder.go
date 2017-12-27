@@ -61,6 +61,12 @@ func (enc *Encoder) WriteStringArray(strings []string) {
     }
 }
 
+func (enc *Encoder) WriteByteArray(bites []byte) {
+	arrayLength := len(bites)
+	enc.WriteInt32(int32(arrayLength))
+	binary.Write(enc.buffer, binary.BigEndian, bites)
+}
+
 func (enc *Encoder) Len() int {
     return enc.buffer.Len()
 }
