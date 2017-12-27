@@ -42,7 +42,7 @@ class GoGenerator implements CodeGenerator {
             "}\n";
 
     private final static String DECODE_TEMPLATE = "" +
-            "func (that *%s) decode(dec Decoder) error {\n" +
+            "func (that *%s) decode(dec *Decoder) error {\n" +
             "%s\n" +
             "}\n";
 
@@ -71,7 +71,7 @@ class GoGenerator implements CodeGenerator {
             INDENT + "}\n";
 
     private final static String ENCODE_TEMPLATE = "" +
-            "func (that *%s) encode(enc Encoder) error {\n" +
+            "func (that *%s) encode(enc *Encoder) error {\n" +
             "%s\n" +
             "}\n";
 
