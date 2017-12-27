@@ -207,7 +207,7 @@ class GoGenerator implements CodeGenerator {
             } else if(member.isComplex && !member.isArray) {
                 assignments.add(String.format(COMPLEX_ENCODING_TEMPLATE, member.name));
             } else {
-                System.err.println("Can't encode type: " + member.type + " array " + member.isArray);
+                System.err.println("Can't encode type in " + structName +": " + member.type + " array " + member.isArray);
             }
         }
         assignments.add(INDENT + "return nil");
@@ -234,7 +234,7 @@ class GoGenerator implements CodeGenerator {
             } else if(member.type.equals("[]byte")) {
                 assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "ReadBytes"));
             } else {
-                System.err.println("Can't decode type: " + member.type + " array " + member.isArray);
+                System.err.println("Can't decode type in " + structName + ": " + member.type + " array " + member.isArray);
             }
         }
 
