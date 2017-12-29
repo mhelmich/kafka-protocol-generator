@@ -42,7 +42,7 @@ class GoGenerator implements CodeGenerator {
             "}\n";
 
     private final static String DECODE_TEMPLATE = "" +
-            "func (that *%s) decode(dec *Decoder) error {\n" +
+            "func (that *%s) Decode(dec *Decoder) error {\n" +
             "%s\n" +
             "}\n";
 
@@ -51,7 +51,7 @@ class GoGenerator implements CodeGenerator {
 
     private final static String COMPLEX_DECODING_TEMPLATE =
             INDENT + "that.%s = new(%s)\n" +
-            INDENT + "that.%s.decode(dec)\n";
+            INDENT + "that.%s.Decode(dec)\n";
 
     private final static String COMPLEX_ARRAY_DECODING_TEMPLATE = "" +
             INDENT + "{\n" +
@@ -63,7 +63,7 @@ class GoGenerator implements CodeGenerator {
             INDENT + INDENT + INDENT + "var i int32\n" +
             INDENT + INDENT + INDENT + "for i = 0; i < arrayLength; i++ {\n" +
             INDENT + INDENT + INDENT + INDENT + "item := new(%s)\n" +
-            INDENT + INDENT + INDENT + INDENT + "item.decode(dec)\n" +
+            INDENT + INDENT + INDENT + INDENT + "item.Decode(dec)\n" +
             INDENT + INDENT + INDENT + INDENT + "buf[i] = item\n" +
             INDENT + INDENT + INDENT + "}\n" +
             INDENT + INDENT + INDENT + "that.%s = buf\n" +
@@ -71,7 +71,7 @@ class GoGenerator implements CodeGenerator {
             INDENT + "}\n";
 
     private final static String ENCODE_TEMPLATE = "" +
-            "func (that *%s) encode(enc *Encoder) error {\n" +
+            "func (that *%s) Encode(enc *Encoder) error {\n" +
             "%s\n" +
             "}\n";
 
@@ -79,14 +79,14 @@ class GoGenerator implements CodeGenerator {
             "enc.%s(that.%s)";
 
     private final static String COMPLEX_ENCODING_TEMPLATE =
-            INDENT + "that.%s.encode(enc)\n";
+            INDENT + "that.%s.Encode(enc)\n";
 
     private final static String COMPLEX_ARRAY_ENCODING_TEMPLATE = "" +
             INDENT + "{\n" +
             INDENT + INDENT + "l := len(that.%s)\n" +
             INDENT + INDENT + "enc.WriteInt32(int32(l))\n" +
             INDENT + INDENT + "for i := 0; i < l; i++ {\n" +
-            INDENT + INDENT + INDENT + "that.%s[i].encode(enc)\n" +
+            INDENT + INDENT + INDENT + "that.%s[i].Encode(enc)\n" +
             INDENT + INDENT + "}\n" +
             INDENT + "}\n" +
             "";
@@ -196,11 +196,11 @@ class GoGenerator implements CodeGenerator {
     private void generateEncodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars) throws IOException {
         List<String> assignments = new LinkedList<>();
         for (MemberVar member : memberVars) {
-            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string"))) {
+            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string") || member.type.equals("bool"))) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type), member.name));
             } else if(member.isArray && member.isComplex) {
                 assignments.add(String.format(COMPLEX_ARRAY_ENCODING_TEMPLATE, member.name, member.name));
-            } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string"))) {
+            } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string") || member.type.equals("int64"))) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type) + "Array", member.name));
             } else if (!member.isArray && member.type.equals("[]byte")) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "WriteByteArray", member.name));
@@ -219,9 +219,9 @@ class GoGenerator implements CodeGenerator {
     private void generateDecodeFunction(BufferedWriter writer, String structName, List<MemberVar> memberVars, String rootStructName) throws IOException {
         List<String> assignments = new LinkedList<>();
         for (MemberVar member : memberVars) {
-            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string"))) {
+            if (!member.isArray && (member.type.equals("int8") || member.type.equals("int16") || member.type.equals("int32") || member.type.equals("int64") || member.type.equals("string") || member.type.equals("bool"))) {
                 assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "Read" + gofyName(member.type)));
-            } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string"))) {
+            } else if (member.isArray && (member.type.equals("int32") || member.type.equals("string") || member.type.equals("int64"))) {
                 assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "Read" + gofyName(member.type) + "Array"));
             } else if(member.isComplex && !member.isArray) {
                 String type = member.type.substring(1, member.type.length());

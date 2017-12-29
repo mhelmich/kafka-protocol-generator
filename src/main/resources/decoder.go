@@ -7,11 +7,24 @@ import (
 )
 
 type Decodable interface {
-    decode(dec Decoder) error
+    Decode(dec *Decoder) error
+}
+
+func NewDecoder(r *bufio.Reader) *Decoder {
+    return &Decoder{
+        decoder: r,
+    }
 }
 
 type Decoder struct {
     decoder *bufio.Reader
+}
+
+func (dec *Decoder) ReadBool() (ret bool) {
+    var i int8
+    binary.Read(dec.decoder, binary.BigEndian, &i)
+    ret = (i != 0)
+    return
 }
 
 func (dec *Decoder) ReadInt64() (ret int64) {
@@ -76,6 +89,22 @@ func (dec *Decoder) ReadInt32Array() (ret []int32) {
         var i int32
         for i = 0; i < arrayLength; i++ {
             buf[i] = dec.ReadInt32()
+        }
+        ret = buf
+        return
+    }
+}
+
+func (dec *Decoder) ReadInt64Array() (ret []int64) {
+    arrayLength := dec.ReadInt32()
+    if int(arrayLength) == -1 {
+        ret = nil
+        return
+    } else {
+        buf := make([]int64, arrayLength)
+        var i int32
+        for i = 0; i < arrayLength; i++ {
+            buf[i] = dec.ReadInt64()
         }
         ret = buf
         return
