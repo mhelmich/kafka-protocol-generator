@@ -112,15 +112,33 @@ class GoGenerator implements CodeGenerator {
                 rootStructName = "";
             }
 
-            for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
-                List<MemberVar> memberVars = massageData(e.getValue(), primitive);
-                // skip gofying names in case it's a request or response because they come gofied already
-                String structName = goifyStructName(e.getKey(), rootStructName);
-                generateStruct(writer, structName, memberVars, rootStructName);
-                generateEncodeFunction(writer, structName, memberVars);
-                generateDecodeFunction(writer, structName, memberVars, rootStructName);
+            if (complex.isEmpty()) {
+                generateEmptyStubs(writer, listener.getFileName().replace("_", ""));
+            } else {
+                for (Map.Entry<String, List<TypeDefinition>> e : complex.entrySet()) {
+                    List<MemberVar> memberVars = massageData(e.getValue(), primitive);
+                    // skip gofying names in case it's a request or response because they come gofied already
+                    String structName = goifyStructName(e.getKey(), rootStructName);
+                    generateStruct(writer, structName, memberVars, rootStructName);
+                    generateEncodeFunction(writer, structName, memberVars);
+                    generateDecodeFunction(writer, structName, memberVars, rootStructName);
+                }
             }
         }
+    }
+
+    private void generateEmptyStubs(BufferedWriter writer, String structName) throws IOException {
+        String goCode = String.format(STRUCT_TEMPLATE, structName, "");
+        writer.append(goCode);
+        writer.newLine();
+
+        goCode = String.format(ENCODE_TEMPLATE, structName, INDENT + "return nil\n");
+        writer.append(goCode);
+        writer.newLine();
+
+        goCode = String.format(DECODE_TEMPLATE, structName, INDENT + "return nil\n");
+        writer.append(goCode);
+        writer.newLine();
     }
 
     private String findRootStructName(Set<String> complexNames) {
