@@ -20,6 +20,12 @@ func NewEncoder() *Encoder {
     }
 }
 
+func (enc *Encoder) WriteVarInt(i int64) {
+    buf := make([]byte, binary.MaxVarintLen64)
+    n := binary.PutVarint(buf, i)
+    binary.Write(enc.buffer, binary.BigEndian, buf[:n])
+}
+
 func (enc *Encoder) WriteInt8(i int8) {
     binary.Write(enc.buffer, binary.BigEndian, i)
 }

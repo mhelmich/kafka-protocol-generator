@@ -20,6 +20,14 @@ type Decoder struct {
     decoder *bufio.Reader
 }
 
+func (dec *Decoder) ReadByte() (byte, error) {
+    return dec.decoder.ReadByte()
+}
+
+func (dec *Decoder) ReadVarInt() (int64, error) {
+    return binary.ReadVarint(dec.decoder)
+}
+
 func (dec *Decoder) ReadBool() (ret bool) {
     var i int8
     binary.Read(dec.decoder, binary.BigEndian, &i)
@@ -63,7 +71,7 @@ func (dec *Decoder) ReadString() (ret string) {
     }
 }
 
-func (dec *Decoder) ReadBytes() (ret []byte) {
+func (dec *Decoder) ReadByteArray() (ret []byte) {
     bitesLength := dec.ReadInt32()
     if int(bitesLength) == -1 {
         ret = make([]byte, 0)

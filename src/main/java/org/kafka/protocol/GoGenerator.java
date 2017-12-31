@@ -28,7 +28,7 @@ class GoGenerator implements CodeGenerator {
             .put("NULLABLE_STRING", "string")
             .put("BYTES", "[]byte")
             .put("BOOLEAN", "bool")
-            .put("RECORDS", "Records") // yes, this is a pre-existing go class
+            .put("RECORDS", "*RecordBatch") // yes, this is a pre-existing go class
             .build();
 
     private final static String INDENT = "    ";
@@ -222,6 +222,8 @@ class GoGenerator implements CodeGenerator {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "Write" + gofyName(member.type) + "Array", member.name));
             } else if (!member.isArray && member.type.equals("[]byte")) {
                 assignments.add(String.format(PRIMITIVE_ENCODING_TEMPLATE, "WriteByteArray", member.name));
+            } else if (!member.isArray && member.type.equals("*RecordBatch")) {
+                assignments.add(String.format(COMPLEX_ENCODING_TEMPLATE, member.name));
             } else if(member.isComplex && !member.isArray) {
                 assignments.add(String.format(COMPLEX_ENCODING_TEMPLATE, member.name));
             } else {
@@ -245,12 +247,14 @@ class GoGenerator implements CodeGenerator {
                 String type = member.type.substring(1, member.type.length());
                 type = rootStructName + "_" + type;
                 assignments.add(String.format(COMPLEX_DECODING_TEMPLATE, member.name, type, member.name));
+            } else if (!member.isArray && member.type.equals("*RecordBatch")) {
+                assignments.add(String.format(COMPLEX_DECODING_TEMPLATE, member.name, "RecordBatch", member.name));
             } else if (member.isComplex && member.isArray) {
                 String type = member.type.substring(3, member.type.length());
                 type = rootStructName + "_" + type;
                 assignments.add(String.format(COMPLEX_ARRAY_DECODING_TEMPLATE, member.name, "*" + type, type, member.name));
             } else if(member.type.equals("[]byte")) {
-                assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "ReadBytes"));
+                assignments.add(String.format(PRIMITIVE_DECODING_TEMPLATE, member.name, "ReadByteArray"));
             } else {
                 System.err.println("Can't decode type in " + structName + ": " + member.type + " array " + member.isArray);
             }
