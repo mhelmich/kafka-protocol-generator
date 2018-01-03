@@ -48,6 +48,8 @@ public class Main {
         Main main = new Main();
 //        String filename = args[0];
         Path originalFile = Paths.get(testFolder.toString(), "test.txt");
+        System.out.println("Reading in file " + originalFile.toAbsolutePath().toString());
+        System.out.println("Writing output into " + testFolder.toAbsolutePath().toString());
         Path filteredPath = Files.createTempFile("filtered-", "");
         main.filterOriginalFile(originalFile, filteredPath);
         main.generateGoFiles(filteredPath);
@@ -66,7 +68,6 @@ public class Main {
         try (BufferedWriter writer = Files.newBufferedWriter(dest)) {
             while (m.find()) {
                 String match = m.group();
-                System.err.println(match);
                 writer.append(match);
                 writer.newLine();
             }
