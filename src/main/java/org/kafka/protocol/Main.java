@@ -40,24 +40,30 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-//        if (args.length != 1) {
+//        if (args.length != 2) {
 //            printUsage();
 //            return;
 //        }
 
         Main main = new Main();
-//        String filename = args[0];
-        Path originalFile = Paths.get(testFolder.toString(), "test.txt");
-        System.out.println("Reading in file " + originalFile.toAbsolutePath().toString());
-        System.out.println("Writing output into " + testFolder.toAbsolutePath().toString());
-        Path filteredPath = Files.createTempFile("filtered-", "");
-        main.filterOriginalFile(originalFile, filteredPath);
-        main.generateGoFiles(filteredPath);
+//        main.run(Paths.get(args[0], args[1]);
+        main.run(Paths.get(testFolder.toString(), "test.txt").toString(), testFolder.toString());
     }
 
     private static void printUsage() {
         System.out.println("usage:");
         System.out.println("gen <source file> <folder to generate files into>");
+    }
+
+    private void run(String source, String destFolder) throws IOException {
+        Path originalFile = Paths.get(source);
+        Path dest = Paths.get(destFolder);
+        System.out.println("Reading in file " + originalFile.toAbsolutePath().toString());
+        System.out.println("Writing output into " + testFolder.toAbsolutePath().toString());
+        Path filteredPath = Files.createTempFile("filtered-", "");
+        filterOriginalFile(originalFile, filteredPath);
+        generateGoFiles(filteredPath, dest);
+        System.out.println("Generation finished!!");
     }
 
     private void filterOriginalFile(Path src, Path dest) throws IOException {
@@ -74,7 +80,7 @@ public class Main {
         }
     }
 
-    private void generateGoFiles(Path file) throws IOException {
+    private void generateGoFiles(Path file, Path dest) throws IOException {
         List<String> lines = Files.readAllLines(file);
         for (String line : lines) {
             CharStream stream = CharStreams.fromString(line);
@@ -84,13 +90,13 @@ public class Main {
             ParseTree tree = parser.bnf_element();
             KafkaProtocolListener listener = new KafkaProtocolListener();
             ParseTreeWalker.DEFAULT.walk(listener, tree);
-            generateGoSourceFile(listener);
+            generateGoSourceFile(listener, dest);
         }
     }
 
-    private void generateGoSourceFile(KafkaProtocolListener listener) {
+    private void generateGoSourceFile(KafkaProtocolListener listener, Path dest) {
         try {
-            codeGen.generateGoSourceFile(listener, testFolder);
+            codeGen.generateGoSourceFile(listener, dest);
         } catch (Exception e) {
             listener.dump();
             e.printStackTrace();
