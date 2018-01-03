@@ -66,7 +66,7 @@ class GoGenerator implements CodeGenerator {
 
     private final static String INDENT = "    ";
     private final static String FILE_HEADER = "" +
-            "package kafkaprotocol\n" +
+            "package kafkawireformat\n" +
             "import ()\n";
 
     private final static String STRUCT_TEMPLATE = "" +

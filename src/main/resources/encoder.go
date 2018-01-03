@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package kafkaprotocol
+package kafkawireformat
 
 import (
     "bytes"
