@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package org.kafka.protocol;
+package org.mhelmich.kafka.protocol.generator;
 
-class TypeDefinition {
-    final String name;
-    final boolean isArray;
-    final boolean isComplex;
+import java.io.IOException;
+import java.nio.file.Path;
 
-    TypeDefinition(String name, boolean isArray, boolean isComplex) {
-        this.name = name;
-        this.isArray = isArray;
-        this.isComplex = isComplex;
-    }
-
-    @Override
-    public String toString() {
-        return name + " - " + isArray + " - " + isComplex;
-    }
+@FunctionalInterface
+interface CodeGenerator {
+    void generateGoSourceFile(KafkaProtocolListener listener, Path testFolder) throws IOException;
 }

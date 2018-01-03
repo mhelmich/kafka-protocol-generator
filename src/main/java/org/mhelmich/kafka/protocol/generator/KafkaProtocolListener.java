@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.kafka.protocol;
+package org.mhelmich.kafka.protocol.generator;
 
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
-import org.kafka.protocol.gen.KafkaProtocolBaseListener;
-import org.kafka.protocol.gen.KafkaProtocolParser;
+import org.mhelmich.kafka.protocol.generator.gen.KafkaProtocolBaseListener;
+import org.mhelmich.kafka.protocol.generator.gen.KafkaProtocolParser;
 
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -15,7 +15,7 @@
  */
 
 // Generated from /Users/marco.helmich/personal/playground/projects/kafka-protocol/src/main/resources/KafkaProtocol.g4 by ANTLR 4.7
-package org.kafka.protocol.gen;
+package org.mhelmich.kafka.protocol.generator.gen;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;

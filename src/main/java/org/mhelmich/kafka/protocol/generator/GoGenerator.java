@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kafka.protocol;
+package org.mhelmich.kafka.protocol.generator;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;

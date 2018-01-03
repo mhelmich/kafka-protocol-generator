@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.kafka.protocol;
+package org.mhelmich.kafka.protocol.generator;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.kafka.protocol.gen.KafkaProtocolLexer;
-import org.kafka.protocol.gen.KafkaProtocolParser;
+import org.mhelmich.kafka.protocol.generator.gen.KafkaProtocolLexer;
+import org.mhelmich.kafka.protocol.generator.gen.KafkaProtocolParser;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -35,19 +35,28 @@ import java.util.regex.Pattern;
 
 public class Main {
     private final static Pattern regexp = Pattern.compile("<pre>(.|\\n)*?<\\/pre>");
-    private final static Path testFolder = Paths.get("/Users/marco.helmich/go/src/kafkaprotocol");
     private final static CodeGenerator codeGen = new GoGenerator();
 
     public static void main(String[] args) throws IOException {
 
-//        if (args.length != 2) {
-//            printUsage();
-//            return;
-//        }
+        if (args.length != 2) {
+            printUsage();
+            return;
+        }
 
-        Main main = new Main();
-//        main.run(Paths.get(args[0], args[1]);
-        main.run(Paths.get(testFolder.toString(), "test.txt").toString(), testFolder.toString());
+        Path src = Paths.get(args[0]);
+        if (!Files.exists(src) || !Files.isRegularFile(src) || !Files.isReadable(src)) {
+            System.err.println("File " + src.toAbsolutePath().toString() + " doesn't exist");
+            return;
+        }
+
+        Path dest = Paths.get(args[1]);
+        if (!Files.exists(dest) || !Files.isDirectory(dest)) {
+            System.err.println("Directory " + dest.toAbsolutePath().toString() + " doesn't exist or isn't a directory");
+            return;
+        }
+
+        new Main().run(src, dest);
     }
 
     private static void printUsage() {
@@ -55,14 +64,12 @@ public class Main {
         System.out.println("gen <source file> <folder to generate files into>");
     }
 
-    private void run(String source, String destFolder) throws IOException {
-        Path originalFile = Paths.get(source);
-        Path dest = Paths.get(destFolder);
-        System.out.println("Reading in file " + originalFile.toAbsolutePath().toString());
-        System.out.println("Writing output into " + testFolder.toAbsolutePath().toString());
+    private void run(Path source, Path destFolder) throws IOException {
+        System.out.println("Reading in file " + source.toAbsolutePath().toString());
+        System.out.println("Writing output into " + destFolder.toAbsolutePath().toString());
         Path filteredPath = Files.createTempFile("filtered-", "");
-        filterOriginalFile(originalFile, filteredPath);
-        generateGoFiles(filteredPath, dest);
+        filterOriginalFile(source, filteredPath);
+        generateGoFiles(filteredPath, destFolder);
         System.out.println("Generation finished!!");
     }
 
