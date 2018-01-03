@@ -83,9 +83,9 @@ class GoGenerator implements CodeGenerator {
 
     private final static String COMPLEX_ARRAY_ENCODING_TEMPLATE = "" +
             INDENT + "{\n" +
-            INDENT + INDENT + "l := len(that.%s)\n" +
-            INDENT + INDENT + "enc.WriteInt32(int32(l))\n" +
-            INDENT + INDENT + "for i := 0; i < l; i++ {\n" +
+            INDENT + INDENT + "arrayLength := len(that.%s)\n" +
+            INDENT + INDENT + "enc.WriteInt32(int32(arrayLength))\n" +
+            INDENT + INDENT + "for i := 0; i < arrayLength; i++ {\n" +
             INDENT + INDENT + INDENT + "that.%s[i].Encode(enc)\n" +
             INDENT + INDENT + "}\n" +
             INDENT + "}\n" +
