@@ -355,6 +355,17 @@ class GoGenerator implements CodeGenerator {
                 e.printStackTrace();
             }
         }
+
+        String encoderDecoder = "/encoder_decoder_test.go";
+        filePath = Paths.get(testFolder.toAbsolutePath().toString(), encoderDecoder);
+        if (!Files.exists(filePath)) {
+            try (InputStream in = this.getClass().getResourceAsStream(encoderDecoder)) {
+                Files.deleteIfExists(filePath);
+                Files.copy(in, filePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static class MemberVar {
