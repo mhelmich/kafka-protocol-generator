@@ -18,12 +18,19 @@ package kafkawireformat
 
 import (
     "bufio"
+    "bytes"
     "encoding/binary"
     "fmt"
 )
 
 type Decodable interface {
     Decode(dec *Decoder) error
+}
+
+func NewDecoderFromBytes(bites []byte) *Decoder {
+    return &Decoder{
+        decoder: bufio.NewReader(bytes.NewReader(bites)),
+    }
 }
 
 func NewDecoder(r *bufio.Reader) *Decoder {
