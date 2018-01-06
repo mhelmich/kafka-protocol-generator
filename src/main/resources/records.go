@@ -86,6 +86,8 @@ func (rb *RecordBatch) Decode(dec *Decoder) error {
 }
 
 func (rb *RecordBatch) Encode(enc *Encoder) error {
+    // In order to facilitate byte size calculations, we write all records into their own encoder.
+    // Having a separate encoder will (hopefully) down the road when we' want to build compression.
     numRecords := int32(len(rb.Records))
     recordsEnc := NewEncoder()
     {
@@ -94,6 +96,9 @@ func (rb *RecordBatch) Encode(enc *Encoder) error {
         }
     }
 
+    // The crc check sum includes the entire RecordBatch after the crc check sum itself.
+    // That's why we're are writing all fields after that into a different encoder.
+    // This way we'd be passing the content of the entire encoder to the hasher and we're good.
     crcCheckSumEnc := NewEncoder()
     crcCheckSumEnc.WriteInt16(rb.Attributes)
     crcCheckSumEnc.WriteInt32(rb.LastOffsetDelta)
@@ -115,14 +120,15 @@ func (rb *RecordBatch) Encode(enc *Encoder) error {
     enc.WriteInt32(rb.PartitionLeaderEpoch)
     enc.WriteInt8(int8(2))
 
+    // compute check sum
     crcCheckSum := crc32.Checksum(crcCheckSumEnc.Bytes(), crc32.MakeTable(crc32.Castagnoli))
     enc.WriteInt32(int32(crcCheckSum))
+    // write the rest of the message
     enc.WriteRawBytes(crcCheckSumEnc.Bytes())
     return nil
 }
 
 type Record struct {
-    // Length int64 // varint byte size of the Record
     // currently unused
     Attributes     int8
     TimestampDelta int64  // varint
