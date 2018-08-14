@@ -12,4 +12,4 @@ In order to build the generator, clone this repo and hit
 You invoke the resulting jar with
 
 
-`java -jar <path to source file> <folder to generate files into>`
+`java -jar target/kafka-protocol-generator-1.0.0-SNAPSHOT.jar <path to source file> <folder to generate files into>`
